@@ -4,7 +4,9 @@ const app = express();
 import { track } from "./model/track.model.js";
 import { sequelize } from "./lib/index.js";
 import { user } from "./model/user.model.js";
-//import { like } from "./model/like.model.js";
+import { like } from "./model/like.model.js";
+
+import { Op } from "@sequelize/core";
 
 app.use(express.json());
 
@@ -146,11 +148,65 @@ async function deleteUserById(id) {
   return response;
 }
 
+async function likeTrack(userId, trackId) {
+  let response = await like.create({ userId, trackId });
+  return response;
+}
+
+async function dislike(userId, trackId) {
+  let response = await like.destroy({
+    where: {
+      userId: userId,
+      trackId: trackId,
+    },
+  });
+  if (response === null || response.length === 0) {
+    return {};
+  }
+  return response;
+}
+
+async function fetchAllLikedTracks(userId) {
+  let trackIds = await like.findAll({ where: { userId } });
+
+  let trackRecords = [];
+  for (let i = 0; i < trackIds.length; i++) {
+    trackRecords.push(trackIds[i].trackId);
+  }
+
+  let response = await track.findAll({
+    where: { id: { [Op.in]: trackRecords } },
+  });
+  return response;
+}
+
+async function fetchAllLikedTracksByArtist(userId, artist) {
+  let trackIds = await like.findAll({ where: { userId } });
+
+  let trackRecords = [];
+  for (let i = 0; i < trackIds.length; i++) {
+    trackRecords.push(trackIds[i].trackId);
+  }
+
+  let response = await track.findAll({
+    where: { id: { [Op.in]: trackRecords }, artist: artist },
+  });
+  return response;
+}
+
 app.get("/seed-data", async (req, res) => {
   try {
     await sequelize.sync({ force: true });
-
+    await user.create({
+      username: "test1",
+      password: "test1",
+      email: "test1@gmail.com",
+    });
     await track.bulkCreate(movieData);
+    /* await like.create({
+      userId: 1,
+      trackId: 1,
+    });*/
     res.status(200).json({ message: "Data seeded successfully" });
   } catch (error) {
     res
@@ -324,6 +380,71 @@ app.post("/users/delete/:id", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error in deleting Data",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/likes", async (req, res) => {
+  let response = await like.findAll();
+  res.status(200).json(response);
+});
+
+// users/1/like?trackId=1
+app.get("/users/:id/like", async (req, res) => {
+  try {
+    let userId = parseInt(req.params.id);
+    let trackId = parseInt(req.query.trackId);
+    let result = await likeTrack(userId, trackId);
+    res.status(200).json({ message: "Data added successfully", result });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in creating Data",
+      error: error.message,
+    });
+  }
+});
+
+// users/1/dislike?trackId=1
+app.get("/users/:id/dislike", async (req, res) => {
+  try {
+    let userId = parseInt(req.params.id);
+    let trackId = parseInt(req.query.trackId);
+    let result = await dislike(userId, trackId);
+    res.status(200).json({ message: "Data deleted successfully", result });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in deleting Data",
+      error: error.message,
+    });
+  }
+});
+
+// users/1/liked
+app.get("/users/:id/liked", async (req, res) => {
+  try {
+    let userId = parseInt(req.params.id);
+    let result = await fetchAllLikedTracks(userId);
+    //let result = await like.findAll({ where: { userId } });
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in fetching Data",
+      error: error.message,
+    });
+  }
+});
+
+// users/1/likedArtist?artist=Arjit Singh
+app.get("/users/:id/likedArtist", async (req, res) => {
+  try {
+    let userId = parseInt(req.params.id);
+    let artist = req.query.artist;
+    let result = await fetchAllLikedTracksByArtist(userId, artist);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in fetching Data",
       error: error.message,
     });
   }

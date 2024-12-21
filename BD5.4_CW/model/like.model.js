@@ -1,8 +1,8 @@
-let { DataTypes, sequelize } = require("../lib");
-let { track } = require("../model/track.model");
-let { user } = require("../model/user.model");
+import { DataTypes, sequelize } from "../lib/index.js";
+import { track } from "../model/track.model.js";
+import { user } from "../model/user.model.js";
 
-let like = sequelize.define("like", {
+export const like = sequelize.define("like", {
   userId: {
     type: DataTypes.INTEGER,
     references: {
@@ -21,5 +21,3 @@ let like = sequelize.define("like", {
 
 user.belongsToMany(track, { through: like });
 track.belongsToMany(user, { through: like });
-
-module.exports = { like };
