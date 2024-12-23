@@ -279,7 +279,7 @@ app.get("/employees/sort-by-name", async (req, res) => {
     res.status(200).json({ employee: result });
   } catch (error) {
     res.status(500).json({
-      message: "Error in fetching Data",
+      message: "Error in Sorting Data",
       error: error.message,
     });
   }
@@ -335,7 +335,9 @@ app.post("/employees/delete/:id", async (req, res) => {
   try {
     let id = parseInt(req.params.id);
     let result = await deleteEmployeeById(id);
-    res.status(200).json(result);
+    res
+      .status(200)
+      .json({ message: "Employee with ID " + id + " has been deleted." });
   } catch (error) {
     res.status(500).json({
       message: "Error in Deleting Data",
