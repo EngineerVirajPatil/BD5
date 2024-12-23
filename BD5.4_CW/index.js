@@ -425,7 +425,6 @@ app.get("/users/:id/liked", async (req, res) => {
   try {
     let userId = parseInt(req.params.id);
     let result = await fetchAllLikedTracks(userId);
-    //let result = await like.findAll({ where: { userId } });
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({
